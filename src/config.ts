@@ -48,6 +48,6 @@ export const config = {
 
   otp: {
     expiresMinutes: parseInt(process.env.OTP_EXPIRES_MINUTES || '5', 10),
-    demoEnabled: !isProduction && process.env.DEMO_OTP_ENABLED === 'true',
+    demoEnabled: process.env.DEMO_OTP_ENABLED === 'true',
   },
 };
