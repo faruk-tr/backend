@@ -1,0 +1,386 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Note: SQLite does not support enums.
+// Enum values are enforced at the application layer (Zod validation).
+// Valid values documented in comments.
+
+// ─── User & Auth ─────────────────────────────────────────────────────────────
+
+model User {
+  // role: admin | municipality | operator | technician | viewer
+  id                String    @id @default(cuid())
+  userCode          String    @unique
+  name              String
+  email             String    @unique
+  password          String
+  role              String    @default("viewer")
+  phone             String?
+  avatar            String?
+  active            Boolean   @default(true)
+  passwordChangedAt DateTime?
+  passwordExpiresAt DateTime?
+  municipalityId    String?
+  operatorId        String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  municipality      Municipality?        @relation(fields: [municipalityId], references: [id])
+  operator          Operator?            @relation(fields: [operatorId], references: [id])
+  permissions       UserPermission[]
+  menuPermissions   UserMenuPermission[]
+  notifications     Notification[]
+  faultsCreated     Fault[]              @relation("FaultCreatedBy")
+  faultsAssigned    Fault[]              @relation("FaultAssignedTo")
+  statusHistories   FaultStatusHistory[]
+  stockMovements    StockMovement[]
+  activityLogs      ActivityLog[]
+  otpCodes          OtpCode[]
+}
+
+model UserPermission {
+  id         String @id @default(cuid())
+  userId     String
+  permission String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permission])
+}
+
+model UserMenuPermission {
+  id      String  @id @default(cuid())
+  userId  String
+  menuKey String
+  enabled Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, menuKey])
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Municipality & Operator ──────────────────────────────────────────────────
+
+model Municipality {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  city      String
+  district  String?
+  phone     String?
+  email     String?
+  address   String?
+  logo      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  faults        Fault[]
+  assets        Asset[]
+  slaDefinition SlaDefinition?
+  operators     OperatorMunicipality[]
+}
+
+model Operator {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  phone     String?
+  email     String?
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users          User[]
+  faults         Fault[]              @relation("FaultOperator")
+  municipalities OperatorMunicipality[]
+}
+
+model OperatorMunicipality {
+  operatorId     String
+  municipalityId String
+
+  operator     Operator     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  municipality Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+
+  @@id([operatorId, municipalityId])
+}
+
+// ─── Definitions ─────────────────────────────────────────────────────────────
+
+model AssetType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String   @unique
+  icon      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assets              Asset[]
+  chronicFaultConfigs ChronicFaultConfig[]
+}
+
+model OrderType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  faults Fault[]
+}
+
+model CargoCompany {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String   @unique
+  trackingUrl String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  faults Fault[]
+}
+
+// ─── Assets & Stock ──────────────────────────────────────────────────────────
+
+model Asset {
+  // status: active | faulty | in_repair | scrapped | in_stock
+  // depotType: field | ptt_depot | supplier_depot
+  id             String   @id @default(cuid())
+  serialNo       String   @unique
+  macAddress     String?
+  simNo          String?
+  samNo          String?
+  status         String   @default("in_stock")
+  depotType      String   @default("ptt_depot")
+  assetTypeId    String
+  municipalityId String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  assetType      AssetType     @relation(fields: [assetTypeId], references: [id])
+  municipality   Municipality? @relation(fields: [municipalityId], references: [id])
+  faults         Fault[]
+  stockItem      StockItem?
+  stockMovements StockMovement[]
+}
+
+model StockItem {
+  id               String    @id @default(cuid())
+  assetId          String    @unique
+  depotType        String    @default("ptt_depot")
+  scrapRequested   Boolean   @default(false)
+  scrapApproved    Boolean   @default(false)
+  scrapRequestedAt DateTime?
+  scrapApprovedAt  DateTime?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model StockMovement {
+  // fromDepot/toDepot: field | ptt_depot | supplier_depot
+  id        String   @id @default(cuid())
+  assetId   String
+  fromDepot String
+  toDepot   String
+  movedById String
+  faultId   String?
+  notes     String?
+  movedAt   DateTime @default(now())
+
+  asset   Asset  @relation(fields: [assetId], references: [id])
+  movedBy User   @relation(fields: [movedById], references: [id])
+  fault   Fault? @relation(fields: [faultId], references: [id])
+}
+
+// ─── Faults ───────────────────────────────────────────────────────────────────
+
+model Fault {
+  // status: new | approved | assigned | repaired | shipped | delivered | closed | cancelled
+  // priority: urgent | high | normal | low
+  // warrantyScope: in_warranty | out_of_warranty
+  id             String    @id @default(cuid())
+  formNo         String    @unique
+  workOrderNo    String    @unique
+  status         String    @default("new")
+  priority       String    @default("normal")
+  warrantyScope  String    @default("out_of_warranty")
+  orderTypeId    String?
+  municipalityId String
+  assetId        String?
+  assetTypeId    String?
+  description    String
+  reportedAt     DateTime  @default(now())
+  approvedAt     DateTime?
+  assignedAt     DateTime?
+  repairedAt     DateTime?
+  closedAt       DateTime?
+  cancelledAt    DateTime?
+  cancelReason   String?
+
+  operatorId      String?
+  assignedToId    String?
+  assignmentNotes String?
+
+  cargoCompanyId  String?
+  cargoTrackingNo String?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  municipality   Municipality        @relation(fields: [municipalityId], references: [id])
+  asset          Asset?              @relation(fields: [assetId], references: [id])
+  orderType      OrderType?          @relation(fields: [orderTypeId], references: [id])
+  operator       Operator?           @relation("FaultOperator", fields: [operatorId], references: [id])
+  assignedTo     User?               @relation("FaultAssignedTo", fields: [assignedToId], references: [id])
+  createdBy      User                @relation("FaultCreatedBy", fields: [createdById], references: [id])
+  cargoCompany   CargoCompany?       @relation(fields: [cargoCompanyId], references: [id])
+  statusHistory  FaultStatusHistory[]
+  attachments    FaultAttachment[]
+  stockMovements StockMovement[]
+}
+
+model FaultStatusHistory {
+  id          String   @id @default(cuid())
+  faultId     String
+  status      String
+  changedById String
+  notes       String?
+  changedAt   DateTime @default(now())
+
+  fault     Fault @relation(fields: [faultId], references: [id], onDelete: Cascade)
+  changedBy User  @relation(fields: [changedById], references: [id])
+}
+
+model FaultAttachment {
+  id         String   @id @default(cuid())
+  faultId    String
+  filename   String
+  mimetype   String
+  size       Int
+  url        String
+  uploadedAt DateTime @default(now())
+
+  fault Fault @relation(fields: [faultId], references: [id], onDelete: Cascade)
+}
+
+// ─── SLA ─────────────────────────────────────────────────────────────────────
+
+model SlaDefinition {
+  id                   String   @id @default(cuid())
+  municipalityId       String   @unique
+  slaDays              Int      @default(25)
+  farePrice            Float    @default(100)
+  dailyPenaltyCount    Int      @default(1)
+  urgentResponseHrs    Int      @default(4)
+  urgentResolutionDays Int      @default(1)
+  highResponseHrs      Int      @default(8)
+  highResolutionDays   Int      @default(3)
+  normalResponseHrs    Int      @default(24)
+  normalResolutionDays Int      @default(7)
+  lowResponseHrs       Int      @default(48)
+  lowResolutionDays    Int      @default(14)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  municipality    Municipality        @relation(fields: [municipalityId], references: [id])
+  emailRecipients SlaEmailRecipient[]
+  sendLogs        SlaSendLog[]
+}
+
+model SlaEmailRecipient {
+  id              String   @id @default(cuid())
+  slaDefinitionId String
+  email           String
+  name            String?
+  createdAt       DateTime @default(now())
+
+  slaDefinition SlaDefinition @relation(fields: [slaDefinitionId], references: [id], onDelete: Cascade)
+}
+
+model SlaSendLog {
+  id              String   @id @default(cuid())
+  slaDefinitionId String
+  sentAt          DateTime @default(now())
+  recipientCount  Int
+  faultCount      Int
+  totalPenalty    Float
+
+  slaDefinition SlaDefinition @relation(fields: [slaDefinitionId], references: [id])
+}
+
+// ─── Chronic Faults ──────────────────────────────────────────────────────────
+
+model ChronicFaultConfig {
+  id             String   @id @default(cuid())
+  assetTypeId    String   @unique
+  thresholdCount Int      @default(3)
+  periodDays     Int      @default(365)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  assetType AssetType @relation(fields: [assetTypeId], references: [id])
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  // type: fault_created | fault_assigned | status_changed | cargo_sent | fault_closed | password_reminder | password_expired
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  faultId   String?
+  read      Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Activity Logs ────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
