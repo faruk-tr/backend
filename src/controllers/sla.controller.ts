@@ -38,8 +38,9 @@ export async function getSlaDefinitions(req: AuthRequest, res: Response, next: N
 
 export async function getSlaDefinitionByMunicipality(req: AuthRequest, res: Response, next: NextFunction) {
   try {
+    const municipalityId = String(req.params.municipalityId);
     const item = await prisma.slaDefinition.findUnique({
-      where: { municipalityId: req.params.municipalityId },
+      where: { municipalityId },
       include: {
         municipality: true,
         emailRecipients: true,
@@ -54,7 +55,7 @@ export async function getSlaDefinitionByMunicipality(req: AuthRequest, res: Resp
 export async function upsertSlaDefinition(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const data = slaSchema.parse(req.body);
-    const { municipalityId } = req.params;
+    const municipalityId = String(req.params.municipalityId);
 
     const item = await prisma.slaDefinition.upsert({
       where: { municipalityId },
@@ -132,7 +133,7 @@ function getPriorityResolutionDays(priority: string, sla: any): number {
 export async function addSlaEmailRecipient(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { email, name } = z.object({ email: z.string().email(), name: z.string().optional() }).parse(req.body);
-    const { definitionId } = req.params;
+    const definitionId = String(req.params.definitionId);
 
     const item = await prisma.slaEmailRecipient.create({
       data: { slaDefinitionId: definitionId, email, name },
@@ -143,7 +144,7 @@ export async function addSlaEmailRecipient(req: AuthRequest, res: Response, next
 
 export async function removeSlaEmailRecipient(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    await prisma.slaEmailRecipient.delete({ where: { id: req.params.recipientId } });
+    await prisma.slaEmailRecipient.delete({ where: { id: String(req.params.recipientId) } });
     res.json({ message: 'Alıcı kaldırıldı.' });
   } catch (err) { next(err); }
 }

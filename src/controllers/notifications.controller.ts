@@ -33,7 +33,7 @@ export async function getNotifications(req: AuthRequest, res: Response, next: Ne
 export async function markAsRead(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     await prisma.notification.updateMany({
-      where: { id: req.params.id, userId: req.user!.id },
+      where: { id: String(req.params.id), userId: req.user!.id },
       data: { read: true, readAt: new Date() },
     });
     res.json({ message: 'Bildirim okundu olarak işaretlendi.' });
@@ -53,7 +53,7 @@ export async function markAllAsRead(req: AuthRequest, res: Response, next: NextF
 export async function deleteNotification(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     await prisma.notification.deleteMany({
-      where: { id: req.params.id, userId: req.user!.id },
+      where: { id: String(req.params.id), userId: req.user!.id },
     });
     res.json({ message: 'Bildirim silindi.' });
   } catch (err) { next(err); }
