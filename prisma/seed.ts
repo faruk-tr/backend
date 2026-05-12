@@ -164,7 +164,7 @@ async function main() {
       userCode: '000000000001',
       name: 'Sistem Admin',
       email: 'admin@sistem.com',
-      password: await hash('admin123'),
+      password: await hash('Test1234!'),
       role: 'admin',
       phone: '+90 555 000 00 01',
       passwordChangedAt: new Date(),
@@ -191,7 +191,7 @@ async function main() {
       userCode: '000000000002',
       name: 'Ayşe Yılmaz',
       email: 'ankara@belediye.com',
-      password: await hash('ankara123'),
+      password: await hash('Test1234!'),
       role: 'municipality',
       phone: '+90 555 000 00 02',
       municipalityId: ankara.id,
@@ -214,7 +214,7 @@ async function main() {
       userCode: '000000000003',
       name: 'Mehmet Kaya',
       email: 'istanbul@belediye.com',
-      password: await hash('istanbul123'),
+      password: await hash('Test1234!'),
       role: 'municipality',
       phone: '+90 555 000 00 03',
       municipalityId: istanbul.id,
@@ -251,7 +251,7 @@ async function main() {
       userCode: '000000000004',
       name: 'Ali Çelik',
       email: 'operator@techservis.com',
-      password: await hash('techservis123'),
+      password: await hash('Test1234!'),
       role: 'operator',
       phone: '+90 555 000 00 04',
       operatorId: techServis.id,
@@ -270,7 +270,7 @@ async function main() {
       userCode: '000000000006',
       name: 'Hasan Öztürk',
       email: 'operator@bilgitek.com',
-      password: await hash('operator123'),
+      password: await hash('Test1234!'),
       role: 'operator',
       phone: '+90 555 000 00 06',
       operatorId: bilgitek.id,
@@ -289,7 +289,7 @@ async function main() {
       userCode: '000000000007',
       name: 'Ahmet Teknisyen',
       email: 'ahmet@techservis.com',
-      password: await hash('teknisyen123'),
+      password: await hash('Test1234!'),
       role: 'technician',
       phone: '+90 555 000 00 07',
       operatorId: techServis.id,
@@ -308,7 +308,7 @@ async function main() {
       userCode: '000000000008',
       name: 'Veli Usta',
       email: 'veli@bilgitek.com',
-      password: await hash('teknisyen123'),
+      password: await hash('Test1234!'),
       role: 'technician',
       phone: '+90 555 000 00 08',
       operatorId: bilgitek.id,
@@ -327,7 +327,7 @@ async function main() {
       userCode: '000000000005',
       name: 'Fatma Çelik',
       email: 'teknisyen@techservis.com',
-      password: await hash('teknisyen123'),
+      password: await hash('Test1234!'),
       role: 'technician',
       phone: '+90 555 000 00 05',
       operatorId: techServis.id,
@@ -516,13 +516,13 @@ async function main() {
 
   console.log('✅ Seed verisi başarıyla yüklendi!');
   console.log('\n📋 Demo Hesaplar:');
-  console.log('  Sistem Admin    : admin@sistem.com          / admin123');
-  console.log('  Belediye (ANK)  : ankara@belediye.com       / ankara123');
-  console.log('  Belediye (IST)  : istanbul@belediye.com     / istanbul123');
-  console.log('  Operatör (TECH) : operator@techservis.com   / techservis123');
-  console.log('  Operatör (BLGT) : operator@bilgitek.com     / operator123');
-  console.log('  Teknisyen (TECH): ahmet@techservis.com      / teknisyen123');
-  console.log('  Teknisyen (BLGT): veli@bilgitek.com         / teknisyen123');
+  console.log('  Sistem Admin    : admin@sistem.com          / Test1234!');
+  console.log('  Belediye (ANK)  : ankara@belediye.com       / Test1234!');
+  console.log('  Belediye (IST)  : istanbul@belediye.com     / Test1234!');
+  console.log('  Operatör (TECH) : operator@techservis.com   / Test1234!');
+  console.log('  Operatör (BLGT) : operator@bilgitek.com     / Test1234!');
+  console.log('  Teknisyen (TECH): ahmet@techservis.com      / Test1234!');
+  console.log('  Teknisyen (BLGT): veli@bilgitek.com         / Test1234!');
 }
 
 main()
